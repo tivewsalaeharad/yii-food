@@ -21,7 +21,9 @@ $btn_caption = isset($ingredient) ? 'Сохранить' : 'Добавить';
 <?php ActiveForm::end(); ?>
 <?php if (isset($ingredients)) :?>
     <h2> Добавленные ингредиенты </h2>
-    <?php foreach ($ingredients as $ingredient) :?>
-        <a href="<?=Url::to(['ingredient/edit', 'id' => $ingredient->id])?>"><?=$ingredient->name?></a>
-    <?php endforeach;?>
+    <?= Html::ul($ingredients, ['class' => 'list-inline',
+        'item' => function($item, $index) {
+            return Html::tag('li', '<a href="'.Url::to(['dish/edit', 'id' => $item->id]).'">'.$item->name.'</a>');
+        }
+    ])?>
 <?php endif; ?>

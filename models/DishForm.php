@@ -8,7 +8,8 @@ use app\models\Ingredient;
 use app\models\Dish;
 use app\models\Consist;
 
-class DishForm extends Model {
+class DishForm extends Model
+{
 
     public $name;
     public $ingredients;

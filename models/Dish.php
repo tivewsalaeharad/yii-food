@@ -14,13 +14,48 @@ class Dish extends ActiveRecord
         return 'dish';
     }
 
+    static public function getAllMatches(array $ingredients)
+    {
+        $query = (new Query)
+            ->select([
+                'dish.id',
+                'dish.name',
+                'COUNT(CASE WHEN consist.ingredient_id NOT IN ('.implode(', ', $ingredients).') OR consist.hidden = 1 THEN 1 ELSE NULL END) AS dismatch',
+                'COUNT(*) as matches'
+            ])
+            ->from('dish')
+            ->innerJoin('consist', 'dish.id = consist.dish_id')
+            ->groupBy('dish.id')
+            ->having('dismatch = 0')
+            ->andHaving('matches = '.count($ingredients));
+        return $query->all();
+    }
+
+    static public function getPartialMatches(array $ingredients)
+    {
+        $query = (new Query)
+            ->select([
+                'dish.id',
+                'dish.name',
+                'COUNT(CASE WHEN consist.ingredient_id IN ('.implode(', ', $ingredients).') THEN 1 ELSE NULL END) AS matches',
+                'COUNT(CASE WHEN consist.hidden = 1 THEN 1 ELSE NULL END) as dismatch'
+            ])
+            ->from('dish')
+            ->innerJoin('consist', 'dish.id = consist.dish_id')
+            ->groupBy('dish.id')
+            ->having('dismatch = 0')
+            ->andHaving('matches > 1')
+            ->orderBy('matches DESC');
+        return $query->all();
+    }
+
     public function getPresent()
     {
         $present_query = (new Query)
             ->select('ingredient.*')
             ->from('ingredient')
             ->innerJoin('consist', 'ingredient.id = consist.ingredient_id')
-            ->where("dish_id = $this->id")
+            ->where('dish_id = :dishid', [':dishid' => $this->id])
             ->groupBy('ingredient.id');
         return $present_query->all();
     }
@@ -31,7 +66,7 @@ class Dish extends ActiveRecord
             ->select('ingredient.id')
             ->from('ingredient')
             ->innerJoin('consist', 'ingredient.id = consist.ingredient_id')
-            ->where("dish_id = $this->id")
+            ->where('dish_id = :dishid', [':dishid' => $this->id])
             ->andWhere("hidden = 1")
             ->groupBy('ingredient.id');
         return $hidden_query->all();
@@ -44,7 +79,7 @@ class Dish extends ActiveRecord
             ->from('ingredient')
             ->leftJoin('consist', 'ingredient.id = consist.ingredient_id')
             ->groupBy('ingredient.id')
-            ->having("COUNT(CASE WHEN dish_id = $this->id THEN 1 ELSE NULL END) = 0");
+            ->having('COUNT(CASE WHEN dish_id = :dishid THEN 1 ELSE NULL END) = 0', [':dishid' => $this->id]);
         return $absent_query->all();
     }
     

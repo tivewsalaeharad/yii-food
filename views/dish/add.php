@@ -30,7 +30,9 @@ $btn_caption = isset($dish) ? 'Сохранить' : 'Добавить';
 <?php ActiveForm::end(); ?>
 <?php if (isset($dishes)) :?>
     <h2> Добавленные блюда </h2>
-    <?php foreach ($dishes as $dish) :?>
-        <a href="<?=Url::to(['dish/edit', 'id' => $dish->id])?>"><?=$dish->name?></a>
-    <?php endforeach;?>
+    <?= Html::ul($dishes, ['class' => 'list-inline',
+        'item' => function($item, $index) {
+            return Html::tag('li', '<a href="'.Url::to(['dish/edit', 'id' => $item->id]).'">'.$item->name.'</a>');
+        }
+    ])?>
 <?php endif; ?>

@@ -7,6 +7,9 @@ use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
+use app\models\Dish;
+use app\models\DishSearchForm;
+use app\models\Ingredient;
 use app\models\LoginForm;
 use app\models\ContactForm;
 use app\models\SignupForm;
@@ -70,7 +73,32 @@ class SiteController extends Controller
         } elseif (Yii::$app->user->identity->username == 'admin') {
             return $this->render('admin');
         } else {
-            return $this->render('user');
+            $model = new DishSearchForm;
+            $dishes = [];
+
+            if ($model->load(Yii::$app->request->post())) {
+                if (count($model->ingredients) > 5) {
+                    $msg = "Вы ввели более 5 ингредиентов";
+                } elseif (count($model->ingredients) < 2) {
+                    $msg = "Выберите больше ингредиентов";
+                } else {
+                    $dishes = Dish::getAllMatches($model->ingredients);
+
+                    if (count($dishes) > 0) {
+                        $msg = "Найдены точные совпадения";
+                    } else {
+                        $dishes = Dish::getPartialMatches($model->ingredients);
+                        if (count($dishes) > 0) {
+                            $msg = "Найдены частичные совпадения";
+                        } else {
+                            $msg = "Точных совпадений не найдено";
+                        }
+                    }
+                };
+            }
+            
+            $ingredients = Ingredient::getArrayForCheckboxList();
+            return $this->render('user', compact('model', 'ingredients', 'msg', 'dishes'));
         }
        
     }
@@ -179,31 +207,4 @@ class SiteController extends Controller
         return $this->goHome();
     }
 
-    /**
-     * Displays contact page.
-     *
-     * @return Response|string
-     */
-    public function actionContact()
-    {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
-            Yii::$app->session->setFlash('contactFormSubmitted');
-
-            return $this->refresh();
-        }
-        return $this->render('contact', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Displays about page.
-     *
-     * @return string
-     */
-    public function actionAbout()
-    {
-        return $this->render('about');
-    }
 }
